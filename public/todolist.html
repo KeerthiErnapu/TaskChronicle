@@ -179,18 +179,11 @@
         async function fetchTasks() {
             console.log('Fetching tasks...');
             try {
-    const user = firebase.auth().currentUser;
-    if (!user) {
-        throw new Error('User not authenticated');
-    }
-
-    const token = await user.getIdToken(); // Fetch the ID token
-    const response = await fetch('/tasks', {
-        headers: {
-            'Accept': 'application/json',
-            'Authorization': `Bearer ${token}` // Include the token here
-        }
-    });
+                const response = await fetch('/tasks', {
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
