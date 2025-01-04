@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Task Manager</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Bootstrap Icons CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <style>
+        .header-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 9999;
+        }
+        
+        .a {
+            background-color: grey;
+            padding: 10px;
+        }
+        
+        .a h1 {
+            color: white;
+            text-align: center;
+            margin: 0;
+        }
+        
+        .container {
+            padding-top: 100px; 
+        }
+        
+        body {
+            background-image: url('https://images.pexels.com/photos/2736499/pexels-photo-2736499.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2://www.shutterstock.com/image-photo/writers-table-flat-lay-composition-260nw-1017732259.jpg');
+            background-repeat: no-repeat;
+            background-size: cover;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+        }
+
+        h1 {
+            color: white;
+            text-align: center;
+        }
+
+        .cont {
+            display: flex;
+            justify-content: center;
+            align-items:center;
+            padding-top: 20px;
+        }
+
+        .b {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 8px;
+            width: 80%;
+        }
+
+        .task-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            height: 70px;
+            background-color: #f7f7f7;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+
+        .task-label {
+            flex: 1;
+            margin-right: 10px;
+            text-align: left;
+            overflow: hidden; 
+            white-space: nowrap; 
+            text-overflow: ellipsis; 
+        }
+
+        .due-date {
+            flex: 1;
+            text-align: center;
+            white-space: nowrap; 
+            min-width: 100px;
+            
+        }
+
+        .btn-group {
+            flex: 1;
+            margin-left: 50px;
+        }
+
+        .filter-links {
+            display: flex;
+            justify-content: flex-start;
+            margin-top: 10px;
+            margin-bottom: 10px; /* Reduced gap */
+        }
+
+        .filter-links a {
+            margin: 0 10px;
+            text-decoration: none;
+            color: black;
+            font-size:22px;
+            padding: 5px 15px;
+            border-radius: 5px;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .filter-links a:hover {
+            background-color: #ddd;
+        }
+
+        .filter-links a.active {
+            font-weight: bold;
+            text-decoration: underline;
+            background-color:#607B8B;
+            color: white;
+        }
+
+        .divider {
+            border-top: 2px solid #ddd;
+            margin-top: 10px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header-container">
+        <div class="a">
+            <h1>MY TODO'S</h1>
+            <button id="logoutButton" class="btn" style="position: absolute; right: 20px; top: 20px; background-color: royalblue; color: white; border: none; padding: 10px 20px; border-radius: 5px;">Logout</button>
+        
+        </div>
+    </div>
+    <div class="container mt-3">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="task-input-container bg-light p-3 rounded">
+                    <form id="taskForm" style="width: 100%;" action="/tasks">
+                        <div class="mb-3">
+                            <label for="taskInput" class="form-label">Task</label>
+                            <input type="text" id="taskInput" class="form-control" name="task" placeholder="Enter new task" maxlength="20" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="dueDateInput" class="form-label">Due Date</label>
+                            <input type="date" id="dueDateInput" class="form-control" name="dueDate" required>
+                        </div>
+                        <button type="submit" class="btn btn-outline-secondary">Add Task</button>
+                    </form>
+                </div>
+                <div class="filter-links mt-3">
+                    <a id="allTasksLink" class="active" onclick="filterTasks('all')">All</a>
+                    <a id="completedTasksLink" onclick="filterTasks('completed')">Completed</a>
+                    <a id="activeTasksLink" onclick="filterTasks('active')">Active</a>
+                </div>
+                <div class="divider"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="cont">
+        <div style="width: 60%;">
+            <div id="taskList" class=" mt-3">
+                <!-- Newly added task will be added dynamically here -->
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', fetchTasks);
+        // Function to add a new task
+        async function fetchTasks() {
+            console.log('Fetching tasks...');
+            try {
+                const response = await fetch('/tasks', {
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const contentType = response.headers.get('Content-Type');
+                if (contentType && contentType.includes('application/json')) {
+                    const tasks = await response.json();
+                    console.log('Tasks fetched:', tasks);
+                    tasks.forEach(task => renderTasks(tasks));
+                } else {
+                    console.error('Error: Expected JSON, but received:', contentType);
+                    const text = await response.text();
+                    console.error('Response body:', text);
+                }
+            } catch (error) {
+                console.error('Error fetching tasks:', error);
+            }
+        }
+        function renderTasks(tasks) {
+            const taskList = document.getElementById('taskList');
+            taskList.innerHTML = ''; 
+
+            tasks.forEach(task => {
+                renderTask(task);
+            });
+        }
+
+        async function addTask(event) {
+            event.preventDefault();
+
+            const taskInput = document.getElementById("taskInput");
+            const dueDateInput = document.getElementById("dueDateInput");
+
+            const task = taskInput.value;
+            const dueDate = dueDateInput.value;
+            const today = new Date().toISOString().split('T')[0];
+
+            if (dueDate < today) {
+                alert('Due date cannot be in the past.');
+                return;
+            }
+            try {
+                const response = await axios.post('/addTask', {
+                    task: task,
+                    dueDate: dueDate
+                });
+
+                if (response.data.success) {
+                    renderTask(response.data.task);
+                    taskInput.value = '';
+                    dueDateInput.value = '';
+                } else {
+                    console.error('Error adding task:', response.data.error);
+                }
+            } catch (error) {
+                console.error('Error adding task:', error);
+            }
+        }
+        function renderTask(task) {
+            const taskList = document.getElementById("taskList");
+            const taskItem = document.createElement("div");
+            taskItem.id = `task_${task.taskId}`;
+            taskItem.classList.add("task-item");
+            taskItem.setAttribute('data-completed',task.completed); 
+            const checkedAttribute = task.completed === 'Yes' ? 'checked' : '';
+            taskItem.innerHTML = `
+                <div class="b">                
+                    <input class="form-check-input" type="checkbox" value="" id="taskCheckbox_${task.taskId}" style="font-size: 20px;border:3px solid skyblue;" ${checkedAttribute}>
+                    <label class="form-check-label task-label" for="taskCheckbox_${task.taskId}" style="font-size:20px;">${task.task}</label>
+                    <span class="due-date" style="font-size: 20px; color: black;" data-task-id="${task.taskId}">Deadline: ${task.dueDate}</span>
+                    <div class="btn-group" style="width:20%">
+                        <button type="button" class="btn btn-success edit-task" data-task-id="${task.taskId}">Edit</button>
+                        <button type="button" class="btn btn-danger delete-task" data-task-id="${task.taskId}">Delete</button>
+                    </div>
+                </div>`;
+            taskList.appendChild(taskItem);
+            const dueDateSpan = taskItem.querySelector('.due-date');
+            const dueDateWidth = dueDateSpan.offsetWidth;
+            const maxWidth = 150; 
+            if (dueDateWidth > maxWidth) {
+                dueDateSpan.style.width = maxWidth + 'px';
+            }
+            const checkbox = taskItem.querySelector('.form-check-input');
+            checkbox.addEventListener('change', async () => {
+            const completed = checkbox.checked;
+            taskItem.setAttribute('data-completed',completed); 
+            await updateTaskStatus(task.taskId, completed); 
+            filterTasks(currentFilter); 
+            });
+
+            const editButton = taskItem.querySelector('.edit-task');
+            const deleteButton = taskItem.querySelector('.delete-task');
+
+            editButton.addEventListener('click', () => {
+                const taskId = editButton.getAttribute('data-task-id');
+                const newTaskName = prompt('Enter new task name:', task.task);
+                if (newTaskName !== null) {
+                    let newDueDate = prompt('Enter new due date (YYYY-MM-DD):', task.dueDate);
+                    if (newDueDate !== null) {
+                        editTask(taskId, newTaskName, newDueDate);
+                    }
+                }
+            });
+
+            deleteButton.addEventListener('click', () => {
+                const taskId = deleteButton.getAttribute('data-task-id');
+                if (confirm('Are you sure you want to delete this task?')) {
+                    deleteTask(taskId);
+                }
+            });
+            return taskItem;
+        }
+        async function updateTaskStatus(taskId,completed) {
+            try {
+                const response = await fetch(`/updateTaskStatus`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ taskId, completed })
+                });
+
+                const data = await response.json();
+                if(data.success){
+                    console.log("successful updating status");
+                }
+                if (!data.success) {
+                    console.error('Error updating task status:', data.error);
+                }
+            } catch (error) {
+                console.error('Error updating task status:', error);
+            }
+        }
+        async function editTask(taskId, newTaskName, newDueDate) {
+            const task = { task: newTaskName, taskId: taskId, dueDate: newDueDate };
+
+            try {
+                const response = await fetch(`/editTask`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(task)
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Update task in the UI
+                    const taskLabel = document.querySelector(`#task_${taskId} .task-label`);
+                    taskLabel.textContent = newTaskName;
+                    const dueDateSpan = document.querySelector(`#task_${taskId} .due-date`);
+                    dueDateSpan.textContent = `Deadline: ${newDueDate}`;
+                } else {
+                    console.error('Error editing task:', data.error);
+                }
+            } catch (error) {
+                console.error('Error editing task:', error);
+            }
+        }
+        async function deleteTask(taskId) {
+            try {
+                const response = await fetch(`/deleteTask`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ taskId }) // Send the taskId in the request body
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    // Remove task from the UI
+                    const taskItem = document.getElementById(`task_${taskId}`);
+                    taskItem.remove();
+                } else {
+                    console.error('Error deleting task:', data.error);
+                }
+            } catch (error) {
+                console.error('Error deleting task:', error);
+            }
+        }
+
+        // Function to filter tasks
+        let currentFilter = 'all'; // Store the current filter
+        function filterTasks(filter) {
+            currentFilter = filter; // Update the current filter
+            const tasks = document.querySelectorAll('.task-item');
+            tasks.forEach(task => {
+                switch (filter) {
+                    case 'all':
+                        task.style.display = 'flex';
+                        break;
+                    case 'completed':
+                        task.style.display = task.getAttribute('data-completed') === 'Yes' ? 'flex' : 'none';
+                        break;
+                    case 'active':
+                        task.style.display = task.getAttribute('data-completed') === 'No' ? 'flex' : 'none';
+                        break;
+                }
+            });
+
+            // Update active link styling
+            document.querySelectorAll('.filter-links a').forEach(link => link.classList.remove('active'));
+            document.getElementById(`${filter}TasksLink`).classList.add('active');
+        }
+
+
+        // Attach event listener to the form for adding tasks
+        document.getElementById("taskForm").addEventListener("submit", addTask);
+        document.getElementById("logoutButton").addEventListener("click", function() {
+            // Perform logout action
+            // For example, you could clear sessionStorage or localStorage if you're using them for authentication
+            // sessionStorage.clear(); // Uncomment this if you're using sessionStorage
+            // localStorage.clear(); // Uncomment this if you're using localStorage
+            
+            // Redirect to login page (you can replace '/login' with your actual login page URL)
+            window.location.href = '/login';
+        });
+    </script>
+</body>
+</html>   

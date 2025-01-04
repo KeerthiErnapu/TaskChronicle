@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Signup Form</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #ecf0f1;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        form {
+            background-color: #fff;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            width: 350px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        form:hover {
+            transform: scale(1.05);
+        }
+
+        h2 {
+            font-size: 26px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            margin: 12px 0;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 16px;
+            background-color: #f9f9f9;
+        }
+
+        input[type="submit"] {
+            background-color: #3498db;
+            color: white;
+            cursor: pointer;
+            border: none;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+
+        input[type="submit"]:hover {
+            background-color: #2980b9;
+        }
+
+        .message {
+            color: red;
+            margin-top: 15px;
+            display: none; /* Hide initially */
+            font-size: 16px;
+            border: 2px solid #e74c3c;
+            border-radius: 6px;
+            padding: 10px;
+            background-color: #f8d7da;
+            text-align: center;
+        }
+
+        .password-container {
+            position: relative;
+        }
+
+        .toggle-password {
+            position: absolute;
+            top: 50%;
+            right: 10px;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #888;
+            font-size: 18px;
+        }
+
+        .toggle-password:hover {
+            color: #333;
+        }
+
+        a {
+            color: #3498db;
+            text-decoration: none;
+            font-size: 16px;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        .footer {
+            font-size: 14px;
+            color: #555;
+            margin-top: 10px;
+        }
+
+        .footer a {
+            color: #3498db;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <form id="signupForm" method="post" action="/signupsubmit">
+        <div id="message" class="message"></div>
+        <h2>Sign Up</h2>
+        <input type="text" placeholder="Full Name" name="fullname" required><br>
+        <input type="email" placeholder="Email" name="email577" required><br>
+        <div class="password-container">
+            <input type="password" placeholder="Password" name="pwd1" id="password" required minlength="8">
+            <span id="togglePassword" class="toggle-password">
+                <i class="fa fa-eye" id="eyeIcon"></i>
+            </span>
+        </div>
+        <input type="submit" value="Sign Up" name="SignUp"><br>
+        Already have an account? <a href="/login">Log In</a>
+
+        <div class="footer">
+            <p>By signing up, you agree to our <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>.</p>
+        </div>
+    </form>
+
+    <script>
+        document.getElementById('signupForm').addEventListener('submit', async function (e) {
+            e.preventDefault(); // Prevent form from submitting the traditional way
+
+            const fullname = document.querySelector('input[name="fullname"]').value;
+            const email = document.querySelector('input[name="email577"]').value;
+            const password = document.querySelector('input[name="pwd1"]').value;
+            const messageDiv = document.getElementById('message');
+
+            try {
+                const response = await fetch('/signupsubmit', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ fullname, email577: email, pwd1: password })
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    // Redirect to login page if signup is successful
+                    window.location.href = '/login.html';
+                    // Clear the form fields
+                } else {
+                    // Display error message if signup fails
+                    messageDiv.innerHTML = data.error;
+                    messageDiv.style.display = 'block';
+                }
+            } catch (error) {
+                // Display generic error message if an unexpected error occurs
+                messageDiv.innerHTML = 'An error occurred. Please try again.';
+                messageDiv.style.display = 'block';
+            }
+            this.reset();
+        });
+
+        document.getElementById('togglePassword').addEventListener('click', function () {
+            const passwordField = document.getElementById('password');
+            const eyeIcon = document.getElementById('eyeIcon');
+            const type = passwordField.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordField.setAttribute('type', type);
+            eyeIcon.classList.toggle('fa-eye');
+            eyeIcon.classList.toggle('fa-eye-slash');
+        });
+
+        // Close error message on click
+        document.getElementById('message').addEventListener('click', function() {
+            this.style.display = 'none';
+        });
+    </script>
+</body>
+</html>
