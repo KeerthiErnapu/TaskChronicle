@@ -146,7 +146,7 @@ app1.get('/tasks', async (req, res) => {
     // Get tasks array from user document
     const userData = userSnapshot.data();
     const tasks = userData.tasks || []; // Default to empty array if tasks field doesn't exist
-
+console.log(tasks);
     // Send tasks as JSON response
     res.status(200).json(tasks);
   } catch (error) {
