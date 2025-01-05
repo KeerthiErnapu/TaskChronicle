@@ -5,7 +5,7 @@ const path=require('path');
 const nodemailer = require('nodemailer');
 const functions = require('firebase-functions');
 const bodyParser = require('body-parser');
-const port=3000;
+const port=5000;
 app1.use(bodyParser.urlencoded({ extended: true }));
 app1.use(bodyParser.json());
 app1.use(express.static(path.join(__dirname, 'public')));
