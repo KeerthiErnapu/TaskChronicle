@@ -13,7 +13,9 @@ app1.use(express.urlencoded({ extended: true }));
 app1.use(express.json());
 const { initializeApp }=require("firebase/app");
 const { getFirestore, query, where, getDocs, addDoc } = require('firebase-admin/firestore');
-const serviceAccount = require("./key1.json");
+const serviceAccount = JSON.parse(
+  Buffer.from(process.env.FIREBASE_CREDENTIALS, 'base64').toString('utf8')
+);
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
   databaseURL: "https://login-database-ede49.firebaseio.com"
