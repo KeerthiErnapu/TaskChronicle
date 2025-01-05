@@ -295,112 +295,12 @@ app1.put('/updateTaskStatus', async (req, res) => {
     res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: '21pa1a0577@vishnu.edu.in', // Update with your Gmail email address
-    pass: 'Navodayan@08' // Update with your Gmail password
-  }
-});
-// Verify the transporter and start sending reminders
-transporter.verify(function(error, success) {
-  if (error) {
-    console.error('Error verifying transporter:', error);
-  } else {
-    console.log('Transporter is ready');
-    // Start sending email reminders
-    sendEmailReminders();
-    // Set interval to run sendEmailReminders every hour
-    setInterval(sendEmailReminders, 3600000);
-  }
-});
-// Function to get the current date as a string in 'YYYY-MM-DD' format
-function getCurrentDate() {
-  const now = new Date();
-  return now;
-}
-async function sendEmailReminders() {
-  try {
-    const today = getCurrentDate();
-    today.setHours(0, 0, 0, 0);
-    const usersSnapshot = await admin.firestore().collection('userdemo').get();
 
-    // Iterate over each user
-    usersSnapshot.forEach(async (userSnapshot) => {
-      const userData = userSnapshot.data();
-      const userEmail = userData.email;
-      const userTasks = userData.tasks;
-
-      // Iterate over each task for the user
-      for (const task of userTasks) {
-        const taskName = task.task;
-        const taskId=task.taskId;
-        const dueDate = new Date(task.dueDate);
-        dueDate.setHours(0, 0, 0, 0);
-        const Completed=task.completed;
-        const lastSentDate = new Date(task.lastSentDate);
-        console.log(lastSentDate);
-        console.log(today);
-
-        // Check if the task is due in 2 or fewer days and reminder hasn't been sent today
-        const twoDaysAhead = new Date();
-        twoDaysAhead.setDate(twoDaysAhead.getDate() + 2);
-
-        if (dueDate >= today && dueDate <= twoDaysAhead && lastSentDate < today && Completed.toLowerCase() === 'no') {
-            await sendReminderEmail(taskName, dueDate, userEmail, taskId);
-        }
-        else{
-          console.log('hel');
-        }
-      
-        
-      }
-
-      // Update the tasks array for the user
-      await admin.firestore().collection('userdemo').doc(userSnapshot.id).update({ tasks: userTasks });
-    });
-  } catch (error) {
-    console.error('Error sending email reminders:', error);
-  }
-}
-// Function to send individual reminder email
-async function sendReminderEmail(taskName, dueDate, userEmail,taskId) {
-  const mailOptions = {
-    from: '21pa1a0577@vishnu.edu.in',
-    to: userEmail,
-    subject: 'Reminder!',
-    text: `Your task "${taskName}" is due on ${dueDate.toDateString()}. Don't forget!`
-  };
-
-  try {
-    await transporter.sendMail(mailOptions);
-    console.log('Reminder email sent for task:', taskName);
-    const userDocRef = admin.firestore().collection('userdemo').doc(userEmail);
-
+    
+    
+ 
 // Get the current user document
-await admin.firestore().runTransaction(async (transaction) => {
-  const userDocSnapshot = await transaction.get(userDocRef);
-  if (!userDocSnapshot.exists) {
-    console.error(`User document does not exist for email: ${userEmail}`);
-    return;
-  }
-  let tasks = userDocSnapshot.data().tasks;
-  const index = tasks.findIndex(task => task.taskId === taskId);
-  if (index !== -1) {
-    const currentDate = new Date().toISOString().split('T')[0];;
-    tasks[index].lastSentDate = currentDate;
-    
-    
-    transaction.update(userDocRef, { tasks: tasks });
-    console.log(`Last sent date updated for task with taskId: ${taskId}`);
-  } else {
-    console.error(`Task with taskId ${taskId} not found for user ${userEmail}`);
-  }
-});
-} catch (error) {
-console.error('Error sending reminder email:', error);
-}
-}
+
 app1.listen(port, () =>{
   console.log("listening on port");
 });
