@@ -179,7 +179,14 @@
             const taskList = document.getElementById('taskList');
             taskList.innerHTML = ''; // Clear the task list
 
-            tasks.forEach((task, index) => {
+            // Filter tasks based on the current filter
+            const filteredTasks = tasks.filter(task => {
+                if (currentFilter === 'active') return !task.completed;
+                if (currentFilter === 'completed') return task.completed;
+                return true; // For 'all' filter
+            });
+
+            filteredTasks.forEach((task, index) => {
                 const taskItem = document.createElement('div');
                 taskItem.classList.add('task-item');
                 taskItem.setAttribute('data-completed', task.completed);
@@ -227,11 +234,16 @@
             });
         }
 
-        // Function to filter tasks based on completion status
+        // Handle task filtering
         let currentFilter = 'all';
         function filterTasks(filter) {
             currentFilter = filter;
-            renderTasks(); // Re-render tasks after applying the filter
+            // Update active class on filter links
+            document.querySelectorAll('.filter-links a').forEach(link => {
+                link.classList.remove('active');
+            });
+            document.getElementById(`${filter}TasksLink`).classList.add('active');
+            renderTasks(); // Re-render tasks after applying filter
         }
 
         // Handle form submission to add a new task
@@ -241,20 +253,23 @@
             const taskInput = document.getElementById("taskInput");
             const dueDateInput = document.getElementById("dueDateInput");
 
-            const task = taskInput.value;
-            const dueDate = dueDateInput.value;
+            const taskName = taskInput.value.trim();
+            const dueDate = dueDateInput.value.trim();
 
-            if (!task || !dueDate) return;
+            if (taskName && dueDate) {
+                const newTask = {
+                    task: taskName,
+                    dueDate: dueDate,
+                    completed: false
+                };
 
-            tasks.push({ task, dueDate, completed: false });
-            renderTasks(); // Re-render tasks after adding new one
+                tasks.push(newTask); // Add task to the list
+                taskInput.value = ''; // Clear input
+                dueDateInput.value = ''; // Clear input
 
-            taskInput.value = ''; // Reset input fields
-            dueDateInput.value = '';
+                renderTasks(); // Re-render tasks with the new task
+            }
         });
-
-        // Initial render of tasks
-        renderTasks();
     </script>
 </body>
 </html>
