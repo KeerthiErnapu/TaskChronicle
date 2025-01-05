@@ -13,9 +13,16 @@ app1.use(express.urlencoded({ extended: true }));
 app1.use(express.json());
 const { initializeApp }=require("firebase/app");
 const { getFirestore, query, where, getDocs, addDoc } = require('firebase-admin/firestore');
-const serviceAccount = JSON.parse(
-  Buffer.from(process.env.FIREBASE_CREDENTIALS, 'base64').toString('utf8')
-);
+try {
+  // Get the Firebase credentials JSON from the environment variable
+  const firebaseCredentials = process.env.FIREBASE_CREDENTIALS;
+
+  if (!firebaseCredentials) {
+    throw new Error('Firebase credentials environment variable not set.');
+  }
+
+  // Parse the JSON string directly
+  const serviceAccount = JSON.parse(firebaseCredentials);
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
   databaseURL: "https://login-database-ede49.firebaseio.com"
