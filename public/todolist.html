@@ -50,7 +50,7 @@
         .cont {
             display: flex;
             justify-content: center;
-            align-items:center;
+            align-items: center;
             padding-top: 20px;
         }
 
@@ -134,15 +134,13 @@
     <div class="header-container">
         <div class="a">
             <h1>MY TODO'S</h1>
-            <button id="logoutButton" class="btn" style="position: absolute; right: 20px; top: 20px; background-color: royalblue; color: white; border: none; padding: 10px 20px; border-radius: 5px;">Logout</button>
-        
         </div>
     </div>
     <div class="container mt-3">
         <div class="row justify-content-center">
             <div class="col-md-6">
                 <div class="task-input-container bg-light p-3 rounded">
-                    <form id="taskForm" style="width: 100%;" action="/tasks">
+                    <form id="taskForm" style="width: 100%;" action="#">
                         <div class="mb-3">
                             <label for="taskInput" class="form-label">Task</label>
                             <input type="text" id="taskInput" class="form-control" name="task" placeholder="Enter new task" maxlength="20" required>
@@ -166,52 +164,78 @@
 
     <div class="cont">
         <div style="width: 60%;">
-            <div id="taskList" class=" mt-3">
+            <div id="taskList" class="mt-3">
                 <!-- Newly added task will be added dynamically here -->
             </div>
         </div>
     </div>
-    
-    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
     <script>
-        document.addEventListener('DOMContentLoaded', fetchTasks);
-        // Function to add a new task
-        async function fetchTasks() {
-            console.log('Fetching tasks...');
-            try {
-                const response = await fetch('https://taskchronicle-ncvm.onrender.com/tasks', {
-                    headers: {
-                        'Accept': 'application/json'
+        // Store tasks locally for this demo
+        const tasks = [];
+
+        // Function to render tasks on the page
+        function renderTasks() {
+            const taskList = document.getElementById('taskList');
+            taskList.innerHTML = ''; // Clear the task list
+
+            tasks.forEach((task, index) => {
+                const taskItem = document.createElement('div');
+                taskItem.classList.add('task-item');
+                taskItem.setAttribute('data-completed', task.completed);
+
+                taskItem.innerHTML = `
+                    <div class="b">                
+                        <input class="form-check-input" type="checkbox" value="" id="taskCheckbox_${index}" style="font-size: 20px;" ${task.completed ? 'checked' : ''}>
+                        <label class="form-check-label task-label" for="taskCheckbox_${index}" style="font-size:20px;">${task.task}</label>
+                        <span class="due-date" style="font-size: 20px;">Deadline: ${task.dueDate}</span>
+                        <div class="btn-group" style="width:20%">
+                            <button type="button" class="btn btn-success edit-task" data-task-id="${index}">Edit</button>
+                            <button type="button" class="btn btn-danger delete-task" data-task-id="${index}">Delete</button>
+                        </div>
+                    </div>`;
+
+                taskList.appendChild(taskItem);
+
+                // Checkbox event listener
+                const checkbox = taskItem.querySelector('.form-check-input');
+                checkbox.addEventListener('change', () => {
+                    task.completed = checkbox.checked;
+                    renderTasks(); // Re-render tasks after updating completion status
+                });
+
+                // Edit button event listener
+                const editButton = taskItem.querySelector('.edit-task');
+                editButton.addEventListener('click', () => {
+                    const newTaskName = prompt('Enter new task name:', task.task);
+                    if (newTaskName !== null) {
+                        task.task = newTaskName;
+                        const newDueDate = prompt('Enter new due date (YYYY-MM-DD):', task.dueDate);
+                        if (newDueDate !== null) {
+                            task.dueDate = newDueDate;
+                            renderTasks(); // Re-render tasks after editing
+                        }
                     }
                 });
-                console.log(response);
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                const contentType = response.headers.get('Content-Type');
-                if (contentType && contentType.includes('application/json')) {
-                    const tasks = await response.json();
-                    console.log('Tasks fetched:', tasks);
-                    tasks.forEach(task => renderTasks(tasks));
-                } else {
-                    console.error('Error: Expected JSON, but received:', contentType);
-                    const text = await response.text();
-                    console.error('Response body:', text);
-                }
-            } catch (error) {
-                console.error('Error fetching tasks:', error);
-            }
-        }
-        function renderTasks(tasks) {
-            const taskList = document.getElementById('taskList');
-            taskList.innerHTML = ''; 
 
-            tasks.forEach(task => {
-                renderTask(task);
+                // Delete button event listener
+                const deleteButton = taskItem.querySelector('.delete-task');
+                deleteButton.addEventListener('click', () => {
+                    tasks.splice(index, 1);
+                    renderTasks(); // Re-render tasks after deletion
+                });
             });
         }
 
-        async function addTask(event) {
+        // Function to filter tasks based on completion status
+        let currentFilter = 'all';
+        function filterTasks(filter) {
+            currentFilter = filter;
+            renderTasks(); // Re-render tasks after applying the filter
+        }
+
+        // Handle form submission to add a new task
+        document.getElementById('taskForm').addEventListener('submit', function(event) {
             event.preventDefault();
 
             const taskInput = document.getElementById("taskInput");
@@ -219,190 +243,18 @@
 
             const task = taskInput.value;
             const dueDate = dueDateInput.value;
-            const today = new Date().toISOString().split('T')[0];
 
-            if (dueDate < today) {
-                alert('Due date cannot be in the past.');
-                return;
-            }
-            try {
-                const response = await axios.post('/addTask', {
-                    task: task,
-                    dueDate: dueDate
-                });
+            if (!task || !dueDate) return;
 
-                if (response.data.success) {
-                    renderTask(response.data.task);
-                    taskInput.value = '';
-                    dueDateInput.value = '';
-                } else {
-                    console.error('Error adding task:', response.data.error);
-                }
-            } catch (error) {
-                console.error('Error adding task:', error);
-            }
-        }
-        function renderTask(task) {
-            const taskList = document.getElementById("taskList");
-            const taskItem = document.createElement("div");
-            taskItem.id = `task_${task.taskId}`;
-            taskItem.classList.add("task-item");
-            taskItem.setAttribute('data-completed',task.completed); 
-            const checkedAttribute = task.completed === 'Yes' ? 'checked' : '';
-            taskItem.innerHTML = `
-                <div class="b">                
-                    <input class="form-check-input" type="checkbox" value="" id="taskCheckbox_${task.taskId}" style="font-size: 20px;border:3px solid skyblue;" ${checkedAttribute}>
-                    <label class="form-check-label task-label" for="taskCheckbox_${task.taskId}" style="font-size:20px;">${task.task}</label>
-                    <span class="due-date" style="font-size: 20px; color: black;" data-task-id="${task.taskId}">Deadline: ${task.dueDate}</span>
-                    <div class="btn-group" style="width:20%">
-                        <button type="button" class="btn btn-success edit-task" data-task-id="${task.taskId}">Edit</button>
-                        <button type="button" class="btn btn-danger delete-task" data-task-id="${task.taskId}">Delete</button>
-                    </div>
-                </div>`;
-            taskList.appendChild(taskItem);
-            const dueDateSpan = taskItem.querySelector('.due-date');
-            const dueDateWidth = dueDateSpan.offsetWidth;
-            const maxWidth = 150; 
-            if (dueDateWidth > maxWidth) {
-                dueDateSpan.style.width = maxWidth + 'px';
-            }
-            const checkbox = taskItem.querySelector('.form-check-input');
-            checkbox.addEventListener('change', async () => {
-            const completed = checkbox.checked;
-            taskItem.setAttribute('data-completed',completed); 
-            await updateTaskStatus(task.taskId, completed); 
-            filterTasks(currentFilter); 
-            });
+            tasks.push({ task, dueDate, completed: false });
+            renderTasks(); // Re-render tasks after adding new one
 
-            const editButton = taskItem.querySelector('.edit-task');
-            const deleteButton = taskItem.querySelector('.delete-task');
-
-            editButton.addEventListener('click', () => {
-                const taskId = editButton.getAttribute('data-task-id');
-                const newTaskName = prompt('Enter new task name:', task.task);
-                if (newTaskName !== null) {
-                    let newDueDate = prompt('Enter new due date (YYYY-MM-DD):', task.dueDate);
-                    if (newDueDate !== null) {
-                        editTask(taskId, newTaskName, newDueDate);
-                    }
-                }
-            });
-
-            deleteButton.addEventListener('click', () => {
-                const taskId = deleteButton.getAttribute('data-task-id');
-                if (confirm('Are you sure you want to delete this task?')) {
-                    deleteTask(taskId);
-                }
-            });
-            return taskItem;
-        }
-        async function updateTaskStatus(taskId,completed) {
-            try {
-                const response = await fetch(`/updateTaskStatus`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ taskId, completed })
-                });
-
-                const data = await response.json();
-                if(data.success){
-                    console.log("successful updating status");
-                }
-                if (!data.success) {
-                    console.error('Error updating task status:', data.error);
-                }
-            } catch (error) {
-                console.error('Error updating task status:', error);
-            }
-        }
-        async function editTask(taskId, newTaskName, newDueDate) {
-            const task = { task: newTaskName, taskId: taskId, dueDate: newDueDate };
-
-            try {
-                const response = await fetch(`/editTask`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(task)
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    // Update task in the UI
-                    const taskLabel = document.querySelector(`#task_${taskId} .task-label`);
-                    taskLabel.textContent = newTaskName;
-                    const dueDateSpan = document.querySelector(`#task_${taskId} .due-date`);
-                    dueDateSpan.textContent = `Deadline: ${newDueDate}`;
-                } else {
-                    console.error('Error editing task:', data.error);
-                }
-            } catch (error) {
-                console.error('Error editing task:', error);
-            }
-        }
-        async function deleteTask(taskId) {
-            try {
-                const response = await fetch(`/deleteTask`, {
-                    method: 'DELETE',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ taskId }) // Send the taskId in the request body
-                });
-
-                const data = await response.json();
-                if (data.success) {
-                    // Remove task from the UI
-                    const taskItem = document.getElementById(`task_${taskId}`);
-                    taskItem.remove();
-                } else {
-                    console.error('Error deleting task:', data.error);
-                }
-            } catch (error) {
-                console.error('Error deleting task:', error);
-            }
-        }
-
-        // Function to filter tasks
-        let currentFilter = 'all'; // Store the current filter
-        function filterTasks(filter) {
-            currentFilter = filter; // Update the current filter
-            const tasks = document.querySelectorAll('.task-item');
-            tasks.forEach(task => {
-                switch (filter) {
-                    case 'all':
-                        task.style.display = 'flex';
-                        break;
-                    case 'completed':
-                        task.style.display = task.getAttribute('data-completed') === 'Yes' ? 'flex' : 'none';
-                        break;
-                    case 'active':
-                        task.style.display = task.getAttribute('data-completed') === 'No' ? 'flex' : 'none';
-                        break;
-                }
-            });
-
-            // Update active link styling
-            document.querySelectorAll('.filter-links a').forEach(link => link.classList.remove('active'));
-            document.getElementById(`${filter}TasksLink`).classList.add('active');
-        }
-
-
-        // Attach event listener to the form for adding tasks
-        document.getElementById("taskForm").addEventListener("submit", addTask);
-        document.getElementById("logoutButton").addEventListener("click", function() {
-            // Perform logout action
-            // For example, you could clear sessionStorage or localStorage if you're using them for authentication
-            // sessionStorage.clear(); // Uncomment this if you're using sessionStorage
-            // localStorage.clear(); // Uncomment this if you're using localStorage
-            
-            // Redirect to login page (you can replace '/login' with your actual login page URL)
-            window.location.href = '/login';
+            taskInput.value = ''; // Reset input fields
+            dueDateInput.value = '';
         });
+
+        // Initial render of tasks
+        renderTasks();
     </script>
 </body>
-</html>   
+</html>
